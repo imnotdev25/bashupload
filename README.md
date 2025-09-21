@@ -40,7 +40,7 @@ Uploading... ██████████████████████�
 📄 File: largefile.zip
 📏 Size: 2.5 GB
 🆔 ID: a1b2c3d4e5f6g7h8
-🔗 Download URL: http://localhost:3000/d/a1b2c3d4e5f6g7h8.zip
+🔗 Download URL: http://localhost:8000/d/a1b2c3d4e5f6g7h8.zip
 ```
 
 ## 🚀 Quick Start
@@ -76,13 +76,13 @@ make build
 make run
 ```
 
-The server will start on `http://localhost:3000`
+The server will start on `http://localhost:8000`
 
 ## 📖 Usage
 
 ### Web Interface
 
-1. Open `http://localhost:3000` in your browser
+1. Open `http://localhost:8000` in your browser
 2. Drag and drop files or click to select
 3. Upload files up to 10GB
 4. Get instant shareable download links
@@ -127,16 +127,16 @@ POST /api/upload
 Content-Type: multipart/form-data
 X-API-Key: your_secret_key (if required)
 
-curl -X POST -F "file=@example.zip" -H "X-API-Key: your_key" http://localhost:3000/api/upload
+curl -X POST -F "file=@example.zip" -H "X-API-Key: your_key" http://localhost:8000/api/upload
 ```
 
 #### Upload via cURL (bashupload style)
 ```bash
 # Public instance
-curl http://localhost:3000 -T your_file.txt
+curl http://localhost:8000 -T your_file.txt
 
 # Private instance
-curl -H "X-API-Key: your_key" http://localhost:3000 -T your_file.txt
+curl -H "X-API-Key: your_key" http://localhost:8000 -T your_file.txt
 ```
 
 #### Download File
@@ -216,7 +216,7 @@ services:
   fileuploader:
     build: .
     ports:
-      - "3000:3000"
+      - "8000:8000"
     volumes:
       - ./uploads:/app/uploads
       - ./fileuploader.db:/app/fileuploader.db
@@ -243,7 +243,7 @@ docker build -t fileuploader .
 # Run container
 docker run -d \
   --name fileuploader \
-  -p 3000:3000 \
+  -p 8000:8000 \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/fileuploader.db:/app/fileuploader.db \
   fileuploader
@@ -255,7 +255,7 @@ docker run -d \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `3000` | Server port |
+| `PORT` | `8000` | Server port |
 | `API_KEY` | `""` | API key for authentication (optional) |
 | `GIN_MODE` | `debug` | Gin mode (debug/release) |
 
@@ -311,7 +311,7 @@ fileuploader/
   "success": true,
   "message": "File uploaded successfully",
   "unique_id": "a1b2c3d4e5f6g7h8",
-  "download_url": "http://localhost:3000/d/a1b2c3d4e5f6g7h8",
+  "download_url": "http://localhost:8000/d/a1b2c3d4e5f6g7h8",
   "file_size": 1048576
 }
 ```
@@ -368,7 +368,7 @@ fileuploader/
 #### CLI connection errors
 ```bash
 # Check server URL
-./uploader upload file.txt --server http://correct-url:3000 --verbose
+./uploader upload file.txt --server http://correct-url:8000 --verbose
 ```
 
 #### Database locked errors
@@ -394,7 +394,7 @@ Enable verbose logging:
 ./uploader upload file.txt --verbose
 
 # Server
-PORT=3000 GIN_MODE=debug ./server
+PORT=8000 GIN_MODE=debug ./server
 ```
 
 ## 🤝 Contributing
