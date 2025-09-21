@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  fileuploader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./fileuploader.db:/app/fileuploader.db
+    environment:
+      - PORT=3000
+      # - API_KEY=your_secret_api_key_here  # Uncomment and set for private instance
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - fileuploader-network
+
+networks:
+  fileuploader-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  database:
