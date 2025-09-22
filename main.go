@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/template/html/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -60,16 +62,22 @@ func main() {
 		log.Printf("API Key authentication disabled - public access")
 	}
 
-	// Create uploads directory
+	// Create uploads and templates directories
 	os.MkdirAll("./uploads", os.ModePerm)
+	os.MkdirAll("./templates", os.ModePerm)
+	os.MkdirAll("./static", os.ModePerm)
 
-	// Initialize Fiber app with optimized settings
+	// Initialize template engine
+	engine := html.New("./templates", ".html")
+
+	// Initialize Fiber app with optimized settings and template engine
 	app := fiber.New(fiber.Config{
-		BodyLimit:         10 * 1024 * 1024 * 1024, // 10GB limit
+		Views:             engine,
+		BodyLimit:         50 * 1024 * 1024 * 1024, // 50GB limit
 		ReadTimeout:       30 * time.Minute,
 		WriteTimeout:      30 * time.Minute,
-		ServerHeader:      "FileUploader/1.0",
-		AppName:           "High Performance File Uploader",
+		ServerHeader:      "bashupload/2.0",
+		AppName:           "bashupload - High Performance File Uploader",
 		StreamRequestBody: true,
 	})
 
@@ -91,10 +99,11 @@ func main() {
 	setupRoutes(app)
 
 	// Start server
-	port := getEnv("PORT", "8000")
+	port := getEnv("PORT", "3000")
 	log.Printf("Server starting on port %s", port)
 	log.Printf("Upload endpoint: http://localhost:%s/api/upload", port)
 	log.Printf("Web interface: http://localhost:%s", port)
+	log.Printf("bashupload server ready!")
 
 	log.Fatal(app.Listen(":" + port))
 }
@@ -271,7 +280,7 @@ func handleCurlUpload(c *fiber.Ctx) error {
 	baseURL := getBaseURL(c)
 	downloadURL := fmt.Sprintf("%s/d/%s%s", baseURL, uniqueID, ext)
 
-	// Return plain text response (bashupload style)
+	// Return plain text response (bashupload static)
 	return c.SendString(downloadURL)
 }
 
@@ -285,11 +294,11 @@ func handleFileUpload(c *fiber.Ctx) error {
 		})
 	}
 
-	// Check file size (10GB limit)
-	if file.Size > 10*1024*1024*1024 {
+	// Check file size (50GB limit)
+	if fileSize > 50*1024*1024*1024 {
 		return c.Status(413).JSON(UploadResponse{
 			Success: false,
-			Message: "File too large. Maximum size is 10GB",
+			Message: "File too large. Maximum size is 50GB",
 		})
 	}
 
@@ -385,7 +394,7 @@ func handleFileDownload(c *fiber.Ctx) error {
 		return c.Status(404).SendString("File not found on disk")
 	}
 
-	// Check if already downloaded once (bashupload style)
+	// Check if already downloaded once (bashupload static)
 	if fileRecord.Downloads >= 1 {
 		// Clean up file after first download
 		os.Remove(fileRecord.FilePath)
@@ -442,10 +451,21 @@ func getStats(c *fiber.Ctx) error {
 }
 
 func serveWebInterface(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"success": true,
-	})
-	// TODO: Add Minimal Web Interface
+	requiresAuth := apiKey != ""
+
+	// Prepare auth header for curl example
+	authHeader := ""
+	if requiresAuth {
+		authHeader = ` -H "X-API-Key: YOUR_API_KEY"`
+	}
+
+	// Template data
+	data := fiber.Map{
+		"RequiresAuth": requiresAuth,
+		"AuthHeader":   authHeader,
+	}
+
+	return c.Render("index", data)
 }
 
 func generateUniqueID() string {

@@ -1,9 +1,10 @@
-module fileuploader
+module bashupload
 
 go 1.21
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.0
+	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/schollz/progressbar/v3 v3.14.1
 	github.com/spf13/cobra v1.8.0
 	gorm.io/driver/sqlite v1.5.4
@@ -12,6 +13,8 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/gofiber/template v1.8.2 // indirect
+	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

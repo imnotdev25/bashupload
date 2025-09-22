@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  fileuploader:
+  bashupload:
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,7 +9,7 @@ services:
       - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
-      - ./fileuploader.db:/app/fileuploader.db
+      - ./bashupload.db:/app/bashupload.db
     environment:
       - PORT=3000
       # - API_KEY=your_secret_api_key_here  # Uncomment and set for private instance
@@ -21,10 +21,10 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - fileuploader-network
+      - bashupload-network
 
 networks:
-  fileuploader-network:
+  bashupload-network:
     driver: bridge
 
 volumes:

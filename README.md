@@ -1,6 +1,6 @@
-# 🚀 High-Performance File Uploader
+# 🚀 bashupload - High-Performance File Uploader
 
-A blazing-fast, secure file uploader built with **Go** and **Fiber** that supports files up to **10GB** with a beautiful web interface and powerful CLI tool.
+A blazing-fast, secure file uploader built with **Go** and **Fiber** that supports files up to **50GB** with a beautiful terminal-style web interface and powerful CLI tool - inspired by bashupload.com.
 
 ![Go Version](https://img.shields.io/badge/Go-1.21+-blue)
 ![Fiber](https://img.shields.io/badge/Fiber-v2-red)
@@ -32,7 +32,7 @@ A blazing-fast, secure file uploader built with **Go** and **Fiber** that suppor
 
 ### CLI Tool
 ```bash
-$ ./uploader upload largefile.zip
+$ ./bashupload upload largefile.zip
 📁 Uploading: largefile.zip (2.5 GB)
 Uploading... ████████████████████████████████████████ 100% | 2.5 GB/2.5 GB
 
@@ -40,7 +40,7 @@ Uploading... ██████████████████████�
 📄 File: largefile.zip
 📏 Size: 2.5 GB
 🆔 ID: a1b2c3d4e5f6g7h8
-🔗 Download URL: http://localhost:8000/d/a1b2c3d4e5f6g7h8.zip
+🔗 Download URL: http://localhost:3000/d/a1b2c3d4e5f6g7h8.zip
 ```
 
 ## 🚀 Quick Start
@@ -49,7 +49,7 @@ Uploading... ██████████████████████�
 
 ```bash
 # Clone the repository
-git clone https://github.com/imnotdev25/bashupload.git
+git clone https://github.com/yourusername/bashupload.git
 cd bashupload
 
 # Start with Docker Compose
@@ -63,7 +63,7 @@ make docker-run
 
 ```bash
 # Clone the repository
-git clone https://github.com/imnotdev25/bashupload.git
+git clone https://github.com/yourusername/bashupload.git
 cd bashupload
 
 # Install dependencies
@@ -76,13 +76,13 @@ make build
 make run
 ```
 
-The server will start on `http://localhost:8000`
+The server will start on `http://localhost:3000`
 
 ## 📖 Usage
 
 ### Web Interface
 
-1. Open `http://localhost:8000` in your browser
+1. Open `http://localhost:3000` in your browser
 2. Drag and drop files or click to select
 3. Upload files up to 10GB
 4. Get instant shareable download links
@@ -91,32 +91,32 @@ The server will start on `http://localhost:8000`
 
 #### Upload a file
 ```bash
-./uploader upload path/to/your/file.zip
+./bashupload upload path/to/your/file.zip
 ```
 
 #### Upload with API key (for private instances)
 ```bash
-./uploader upload file.txt --api-key your_secret_key
+./bashupload upload file.txt --api-key your_secret_key
 ```
 
 #### Upload with custom server
 ```bash
-./uploader upload file.txt --server https://your-domain.com --api-key your_key
+./bashupload upload file.txt --server https://your-domain.com --api-key your_key
 ```
 
 #### Get file information
 ```bash
-./uploader info a1b2c3d4e5f6g7h8
+./bashupload info a1b2c3d4e5f6g7h8
 ```
 
 #### Download a file
 ```bash
-./uploader download a1b2c3d4e5f6g7h8.zip output.zip
+./bashupload download a1b2c3d4e5f6g7h8.zip output.zip
 ```
 
 #### CLI Help
 ```bash
-./uploader --help
+./bashupload --help
 ```
 
 ### API Endpoints
@@ -127,16 +127,16 @@ POST /api/upload
 Content-Type: multipart/form-data
 X-API-Key: your_secret_key (if required)
 
-curl -X POST -F "file=@example.zip" -H "X-API-Key: your_key" http://localhost:8000/api/upload
+curl -X POST -F "file=@example.zip" -H "X-API-Key: your_key" http://localhost:3000/api/upload
 ```
 
 #### Upload via cURL (bashupload style)
 ```bash
 # Public instance
-curl http://localhost:8000 -T your_file.txt
+curl http://localhost:3000 -T your_file.txt
 
 # Private instance
-curl -H "X-API-Key: your_key" http://localhost:8000 -T your_file.txt
+curl -H "X-API-Key: your_key" http://localhost:3000 -T your_file.txt
 ```
 
 #### Download File
@@ -168,7 +168,7 @@ GET /api/stats
 
 ```bash
 # Clone repository
-git clone https://github.com/imnotdev25/bashupload.git
+git clone https://github.com/yourusername/bashupload.git
 cd bashupload
 
 # Install dependencies
@@ -216,7 +216,7 @@ services:
   fileuploader:
     build: .
     ports:
-      - "8000:8000"
+      - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
       - ./fileuploader.db:/app/fileuploader.db
@@ -238,15 +238,15 @@ docker-compose down
 
 ```bash
 # Build image
-docker build -t fileuploader .
+docker build -t bashupload .
 
 # Run container
 docker run -d \
-  --name fileuploader \
-  -p 8000:8000 \
+  --name bashupload \
+  -p 3000:3000 \
   -v $(pwd)/uploads:/app/uploads \
-  -v $(pwd)/fileuploader.db:/app/fileuploader.db \
-  fileuploader
+  -v $(pwd)/bashupload.db:/app/bashupload.db \
+  bashupload
 ```
 
 ## ⚙️ Configuration
@@ -255,7 +255,7 @@ docker run -d \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `8000` | Server port |
+| `PORT` | `3000` | Server port |
 | `API_KEY` | `""` | API key for authentication (optional) |
 | `GIN_MODE` | `debug` | Gin mode (debug/release) |
 
@@ -267,8 +267,8 @@ To run a private instance that requires API key authentication:
 # Set API key environment variable
 export API_KEY="your_super_secret_api_key_here"
 
-# Run server
-./server
+# Run bashupload server
+./bashupload-server
 ```
 
 Or with Docker:
@@ -290,17 +290,22 @@ The server can be configured by modifying the `main.go` file:
 ## 📁 Project Structure
 
 ```
-fileuploader/
-├── main.go              # Main server application
-├── cmd/cli/main.go      # CLI application
-├── go.mod               # Go module definition
-├── go.sum               # Go module checksums
-├── Dockerfile           # Docker configuration
-├── docker-compose.yml   # Docker Compose configuration
-├── Makefile            # Build and development commands
-├── README.md           # This file
-├── uploads/            # Upload directory (created automatically)
-└── fileuploader.db     # SQLite database (created automatically)
+bashupload/
+├── main.go                  # Main server application
+├── cmd/cli/main.go          # CLI application
+├── templates/
+│   └── index.html          # Web interface template
+├── static/
+│   └── style.css           # Terminal-style CSS
+├── go.mod                  # Go module definition
+├── go.sum                  # Go module checksums
+├── Dockerfile              # Docker configuration
+├── docker-compose.yml      # Docker Compose configuration
+├── Makefile               # Build and development commands
+├── setup.sh               # Project setup script
+├── README.md              # This file
+├── uploads/               # Upload directory (created automatically)
+└── bashupload.db          # SQLite database (created automatically)
 ```
 
 ## 🔧 API Reference
@@ -311,7 +316,7 @@ fileuploader/
   "success": true,
   "message": "File uploaded successfully",
   "unique_id": "a1b2c3d4e5f6g7h8",
-  "download_url": "http://localhost:8000/d/a1b2c3d4e5f6g7h8",
+  "download_url": "http://localhost:3000/d/a1b2c3d4e5f6g7h8",
   "file_size": 1048576
 }
 ```
@@ -368,7 +373,7 @@ fileuploader/
 #### CLI connection errors
 ```bash
 # Check server URL
-./uploader upload file.txt --server http://correct-url:8000 --verbose
+./uploader upload file.txt --server http://correct-url:3000 --verbose
 ```
 
 #### Database locked errors
@@ -394,7 +399,7 @@ Enable verbose logging:
 ./uploader upload file.txt --verbose
 
 # Server
-PORT=8000 GIN_MODE=debug ./server
+PORT=3000 GIN_MODE=debug ./server
 ```
 
 ## 🤝 Contributing
@@ -416,7 +421,6 @@ PORT=8000 GIN_MODE=debug ./server
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+---
 
-- [BashUpload](https://github.com/IO-Technologies/bashupload) - Inspired By Bashupload
-
+**Made with ❤️ and Go - Inspired by bashupload.com**

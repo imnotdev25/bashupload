@@ -47,9 +47,9 @@ var (
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "uploader",
-		Short: "High-performance file uploader CLI",
-		Long:  `A CLI tool to upload files up to 10GB and generate secure download links`,
+		Use:   "bashupload",
+		Short: "bashupload - High-performance file uploader CLI",
+		Long:  `A CLI tool to upload files up to 50GB and generate secure download links - just like bashupload.com`,
 	}
 
 	var uploadCmd = &cobra.Command{
@@ -107,9 +107,9 @@ func uploadFile(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Check file size (10GB limit)
-	if fileInfo.Size() > 10*1024*1024*1024 {
-		fmt.Fprintf(os.Stderr, "Error: File too large. Maximum size is 10GB\n")
+	// Check file size (50GB limit)
+	if fileInfo.Size() > 50*1024*1024*1024 {
+		fmt.Fprintf(os.Stderr, "Error: File too large. Maximum size is 50GB\n")
 		os.Exit(1)
 	}
 

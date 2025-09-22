@@ -1,10 +1,10 @@
-name: CI/CD Pipeline
+name: bashupload CI/CD Pipeline
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   release:
     types: [ published ]
 
@@ -85,19 +85,19 @@ jobs:
 
       - name: Build server
         run: |
-          CGO_ENABLED=1 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -o server-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
+          CGO_ENABLED=1 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -o bashupload-server-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
 
       - name: Build CLI
         run: |
-          CGO_ENABLED=1 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -o uploader-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} ./cmd/cli
+          CGO_ENABLED=1 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -o bashupload-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} ./cmd/cli
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: |
-            server-${{ matrix.os }}-${{ matrix.arch }}*
-            uploader-${{ matrix.os }}-${{ matrix.arch }}*
+            bashupload-server-${{ matrix.os }}-${{ matrix.arch }}*
+            bashupload-${{ matrix.os }}-${{ matrix.arch }}*
 
   docker:
     needs: test
@@ -120,7 +120,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/fileuploader
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/bashupload
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -158,7 +158,7 @@ jobs:
           done
           cp README.md docker-compose.yml Dockerfile release/
           cd release
-          tar -czf ../fileuploader-${{ github.event.release.tag_name }}.tar.gz .
+          tar -czf ../bashupload-${{ github.event.release.tag_name }}.tar.gz .
           cd ..
 
       - name: Upload release assets
@@ -167,13 +167,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./fileuploader-${{ github.event.release.tag_name }}.tar.gz
-          asset_name: fileuploader-${{ github.event.release.tag_name }}.tar.gz
+          asset_path: ./bashupload-${{ github.event.release.tag_name }}.tar.gz
+          asset_name: bashupload-${{ github.event.release.tag_name }}.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload individual binaries
         run: |
-          for file in release/server-* release/uploader-*; do
+          for file in release/bashupload-server-* release/bashupload-*; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")
               curl \

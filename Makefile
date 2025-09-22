@@ -1,11 +1,11 @@
-# File Uploader Makefile
+# bashupload Makefile
 
 .PHONY: all build build-server build-cli clean run dev docker-build docker-run docker-stop test deps help
 
 # Variables
-BINARY_SERVER=server
-BINARY_CLI=uploader
-DOCKER_IMAGE=fileuploader:latest
+BINARY_SERVER=bashupload-server
+BINARY_CLI=bashupload
+DOCKER_IMAGE=bashupload:latest
 PORT?=3000
 
 # Default target
@@ -84,17 +84,17 @@ docker-build:
 docker-run: docker-build
 	@echo "Running Docker container..."
 	docker run -d \
-		--name fileuploader \
+		--name bashupload \
 		-p $(PORT):3000 \
 		-v $(PWD)/uploads:/app/uploads \
-		-v $(PWD)/fileuploader.db:/app/fileuploader.db \
+		-v $(PWD)/bashupload.db:/app/bashupload.db \
 		$(DOCKER_IMAGE)
 	@echo "Container started on port $(PORT)"
 
 docker-stop:
 	@echo "Stopping Docker container..."
-	docker stop fileuploader || true
-	docker rm fileuploader || true
+	docker stop bashupload || true
+	docker rm bashupload || true
 	@echo "Container stopped"
 
 # Docker Compose commands
@@ -166,17 +166,17 @@ release: clean build-linux build-windows build-darwin
 # Database operations
 db-reset:
 	@echo "Resetting database..."
-	rm -f fileuploader.db
+	rm -f bashupload.db
 	@echo "Database reset completed"
 
 db-backup:
 	@echo "Backing up database..."
-	cp fileuploader.db fileuploader.db.backup
-	@echo "Database backed up to fileuploader.db.backup"
+	cp bashupload.db bashupload.db.backup
+	@echo "Database backed up to bashupload.db.backup"
 
 # Show help
 help:
-	@echo "File Uploader - Available Commands:"
+	@echo "bashupload - Available Commands:"
 	@echo ""
 	@echo "Build Commands:"
 	@echo "  build          - Build both server and CLI"

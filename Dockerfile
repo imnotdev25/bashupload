@@ -16,6 +16,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Create required directories
+RUN mkdir -p templates static
+
 # Build the server
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o server .
 
@@ -29,7 +32,7 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates sqlite
 
 # Create non-root user
-RUN adduser -D -s /bin/sh appuser
+RUN adduser -D -s /bin/sh bashupload
 
 # Set working directory
 WORKDIR /app
@@ -38,14 +41,18 @@ WORKDIR /app
 COPY --from=builder /app/server .
 COPY --from=builder /app/uploader .
 
+# Copy template and static files
+COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/static ./static
+
 # Create uploads directory
-RUN mkdir -p uploads && chown appuser:appuser uploads
+RUN mkdir -p uploads && chown bashupload:bashupload uploads
 
 # Change ownership of app directory
-RUN chown -R appuser:appuser /app
+RUN chown -R bashupload:bashupload /app
 
 # Switch to non-root user
-USER appuser
+USER bashupload
 
 # Expose port
 EXPOSE 3000
@@ -59,5 +66,5 @@ ENV PORT=3000
 ENV GIN_MODE=release
 # ENV API_KEY=your_secret_api_key_here
 
-# Run the server
+# Run bashupload server
 CMD ["./server"]
