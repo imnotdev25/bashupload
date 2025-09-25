@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"os"
@@ -46,8 +45,11 @@ type UploadResponse struct {
 }
 
 var (
-	db     *gorm.DB
-	apiKey string
+	db             *gorm.DB
+	apiKey         string
+	maxUpload      int64
+	maxDownloads   int
+	expireDuration time.Duration
 )
 
 func main() {
@@ -62,6 +64,34 @@ func main() {
 		log.Printf("API Key authentication disabled - public access")
 	}
 
+	// Get max upload size from environment (default 1GB)
+	maxUploadStr := getEnv("MAX_UPLOAD_SIZE", "1GB")
+	var err error
+	maxUpload, err = parseSize(maxUploadStr)
+	if err != nil {
+		log.Printf("Invalid MAX_UPLOAD_SIZE value '%s', using default 1GB", maxUploadStr)
+		maxUpload = 1073741824 // 1GB
+	}
+	// Get max download count from environment (default 1)
+	maxDownloadStr := getEnv("MAX_DOWNLOADS", "1")
+	var err2 error
+	maxDownloads, err2 = strconv.Atoi(maxDownloadStr)
+	if err2 != nil || maxDownloads < 1 {
+		log.Printf("Invalid MAX_DOWNLOADS value '%s', using default 1", maxDownloadStr)
+		maxDownloads = 1
+	}
+	log.Printf("Maximum downloads per file: %d", maxDownloads)
+
+	// Get file expiration duration from environment (default 3D)
+	expireStr := getEnv("FILE_EXPIRE_AFTER", "3D")
+	var err3 error
+	expireDuration, err3 = parseDuration(expireStr)
+	if err3 != nil {
+		log.Printf("Invalid FILE_EXPIRE_AFTER value '%s', using default 3 days", expireStr)
+		expireDuration = 72 * time.Hour // 3 days
+	}
+	log.Printf("Files expire after: %s", formatDuration(expireDuration))
+
 	// Create uploads and templates directories
 	os.MkdirAll("./uploads", os.ModePerm)
 	os.MkdirAll("./templates", os.ModePerm)
@@ -73,7 +103,7 @@ func main() {
 	// Initialize Fiber app with optimized settings and template engine
 	app := fiber.New(fiber.Config{
 		Views:             engine,
-		BodyLimit:         50 * 1024 * 1024 * 1024, // 50GB limit
+		BodyLimit:         int(maxUpload + (10 * 1024 * 1024)), // Add 10MB buffer for headers/metadata
 		ReadTimeout:       30 * time.Minute,
 		WriteTimeout:      30 * time.Minute,
 		ServerHeader:      "bashupload/2.0",
@@ -98,6 +128,9 @@ func main() {
 	// Routes
 	setupRoutes(app)
 
+	// Clean up expired files periodically
+	go cleanupExpiredFiles()
+
 	// Start server
 	port := getEnv("PORT", "3000")
 	log.Printf("Server starting on port %s", port)
@@ -114,7 +147,7 @@ func cleanupExpiredFiles() {
 
 	for range ticker.C {
 		var expiredFiles []FileRecord
-		db.Where("expires_at < ? OR downloads >= 1", time.Now()).Find(&expiredFiles)
+		db.Where("expires_at < ? OR downloads >= ?", time.Now(), maxDownloads).Find(&expiredFiles)
 
 		for _, file := range expiredFiles {
 			// Remove file from disk
@@ -131,7 +164,7 @@ func cleanupExpiredFiles() {
 
 func initDB() {
 	var err error
-	db, err = gorm.Open(sqlite.Open("fileuploader.db"), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open("bashupload.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -230,9 +263,9 @@ func handleCurlUpload(c *fiber.Ctx) error {
 	contentLength := c.Get("Content-Length")
 	fileSize, _ := strconv.ParseInt(contentLength, 10, 64)
 
-	// Check file size (50GB limit)
-	if fileSize > 50*1024*1024*1024 {
-		return c.Status(413).SendString("File too large. Maximum size is 50GB")
+	// Check file size (configurable limit)
+	if fileSize > maxUpload {
+		return c.Status(413).SendString(fmt.Sprintf("File too large. Maximum size is %s", formatBytes(maxUpload)))
 	}
 
 	// Save uploaded data to file
@@ -256,8 +289,8 @@ func handleCurlUpload(c *fiber.Ctx) error {
 	// Get client IP
 	clientIP := c.IP()
 
-	// Save to database with expiration (3 days)
-	expiresAt := time.Now().Add(72 * time.Hour)
+	// Save to database with configurable expiration
+	expiresAt := time.Now().Add(expireDuration)
 	fileRecord := FileRecord{
 		UniqueID:     uniqueID,
 		OriginalName: filename,
@@ -280,7 +313,7 @@ func handleCurlUpload(c *fiber.Ctx) error {
 	baseURL := getBaseURL(c)
 	downloadURL := fmt.Sprintf("%s/d/%s%s", baseURL, uniqueID, ext)
 
-	// Return plain text response (bashupload static)
+	// Return plain text response (bashupload style)
 	return c.SendString(downloadURL)
 }
 
@@ -294,11 +327,11 @@ func handleFileUpload(c *fiber.Ctx) error {
 		})
 	}
 
-	// Check file size (50GB limit)
-	if fileSize > 50*1024*1024*1024 {
+	// Check file size (configurable limit)
+	if file.Size > maxUpload {
 		return c.Status(413).JSON(UploadResponse{
 			Success: false,
-			Message: "File too large. Maximum size is 50GB",
+			Message: fmt.Sprintf("File too large. Maximum size is %s", formatBytes(maxUpload)),
 		})
 	}
 
@@ -327,8 +360,8 @@ func handleFileUpload(c *fiber.Ctx) error {
 	// Get client IP
 	clientIP := c.IP()
 
-	// Save to database with expiration (3 days)
-	expiresAt := time.Now().Add(72 * time.Hour)
+	// Save to database with configurable expiration
+	expiresAt := time.Now().Add(expireDuration)
 	fileRecord := FileRecord{
 		UniqueID:     uniqueID,
 		OriginalName: file.Filename,
@@ -394,12 +427,16 @@ func handleFileDownload(c *fiber.Ctx) error {
 		return c.Status(404).SendString("File not found on disk")
 	}
 
-	// Check if already downloaded once (bashupload static)
-	if fileRecord.Downloads >= 1 {
-		// Clean up file after first download
+	// Check if download limit exceeded
+	if fileRecord.Downloads >= maxDownloads {
+		// Clean up file after max downloads reached
 		os.Remove(fileRecord.FilePath)
 		db.Delete(&fileRecord)
-		return c.Status(410).SendString("File has already been downloaded and removed")
+		if maxDownloads == 1 {
+			return c.Status(410).SendString("File has already been downloaded and removed")
+		} else {
+			return c.Status(410).SendString(fmt.Sprintf("File has reached maximum download limit (%d) and was removed", maxDownloads))
+		}
 	}
 
 	// Increment download counter
@@ -459,10 +496,23 @@ func serveWebInterface(c *fiber.Ctx) error {
 		authHeader = ` -H "X-API-Key: YOUR_API_KEY"`
 	}
 
+	// Prepare download limit description
+	downloadLimit := "single download"
+	if maxDownloads > 1 {
+		downloadLimit = fmt.Sprintf("%d downloads", maxDownloads)
+	}
+
+	// Prepare expiration description
+	expireText := formatDuration(expireDuration)
+
 	// Template data
 	data := fiber.Map{
-		"RequiresAuth": requiresAuth,
-		"AuthHeader":   authHeader,
+		"RequiresAuth":  requiresAuth,
+		"AuthHeader":    authHeader,
+		"MaxUploadSize": formatBytes(maxUpload),
+		"DownloadLimit": downloadLimit,
+		"MaxDownloads":  maxDownloads,
+		"ExpireTime":    expireText,
 	}
 
 	return c.Render("index", data)
@@ -487,6 +537,134 @@ func getEnv(key, defaultVal string) string {
 		return value
 	}
 	return defaultVal
+}
+
+func parseDuration(durationStr string) (time.Duration, error) {
+	// Remove spaces and convert to lowercase
+	durationStr = strings.TrimSpace(strings.ToLower(durationStr))
+
+	// If it's just a number, treat as hours
+	if num, err := strconv.ParseFloat(durationStr, 64); err == nil {
+		return time.Duration(num * float64(time.Hour)), nil
+	}
+
+	// Extract number and unit
+	var numStr string
+	var unit string
+
+	// Find where the number ends and unit begins
+	i := 0
+	for i < len(durationStr) && (durationStr[i] >= '0' && durationStr[i] <= '9' || durationStr[i] == '.') {
+		i++
+	}
+
+	if i == 0 {
+		return 0, fmt.Errorf("invalid duration format: %s", durationStr)
+	}
+
+	numStr = durationStr[:i]
+	unit = durationStr[i:]
+
+	// Parse the number (support decimal)
+	num, err := strconv.ParseFloat(numStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid number in duration: %s", numStr)
+	}
+
+	// Convert based on unit
+	var multiplier time.Duration
+	switch unit {
+	case "", "h", "hour", "hours":
+		multiplier = time.Hour
+	case "m", "min", "minute", "minutes":
+		multiplier = time.Minute
+	case "d", "day", "days":
+		multiplier = 24 * time.Hour
+	case "w", "week", "weeks":
+		multiplier = 7 * 24 * time.Hour
+	case "mo", "month", "months":
+		multiplier = 30 * 24 * time.Hour // Approximate
+	case "y", "year", "years":
+		multiplier = 365 * 24 * time.Hour // Approximate
+	default:
+		return 0, fmt.Errorf("unknown duration unit: %s", unit)
+	}
+
+	result := time.Duration(num * float64(multiplier))
+	return result, nil
+}
+
+func formatDuration(d time.Duration) string {
+	if d < time.Hour {
+		return fmt.Sprintf("%.0f minutes", d.Minutes())
+	} else if d < 24*time.Hour {
+		return fmt.Sprintf("%.1f hours", d.Hours())
+	} else if d < 7*24*time.Hour {
+		days := d.Hours() / 24
+		return fmt.Sprintf("%.1f days", days)
+	} else if d < 30*24*time.Hour {
+		weeks := d.Hours() / (7 * 24)
+		return fmt.Sprintf("%.1f weeks", weeks)
+	} else if d < 365*24*time.Hour {
+		months := d.Hours() / (30 * 24)
+		return fmt.Sprintf("%.1f months", months)
+	} else {
+		years := d.Hours() / (365 * 24)
+		return fmt.Sprintf("%.1f years", years)
+	}
+}
+
+func parseSize(sizeStr string) (int64, error) {
+	// Remove spaces and convert to lowercase
+	sizeStr = strings.TrimSpace(strings.ToLower(sizeStr))
+
+	// If it's just a number, treat as bytes
+	if num, err := strconv.ParseInt(sizeStr, 10, 64); err == nil {
+		return num, nil
+	}
+
+	// Extract number and unit
+	var numStr string
+	var unit string
+
+	// Find where the number ends and unit begins
+	i := 0
+	for i < len(sizeStr) && (sizeStr[i] >= '0' && sizeStr[i] <= '9' || sizeStr[i] == '.') {
+		i++
+	}
+
+	if i == 0 {
+		return 0, fmt.Errorf("invalid size format: %s", sizeStr)
+	}
+
+	numStr = sizeStr[:i]
+	unit = sizeStr[i:]
+
+	// Parse the number (support decimal)
+	num, err := strconv.ParseFloat(numStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid number in size: %s", numStr)
+	}
+
+	// Convert based on unit
+	var multiplier int64
+	switch unit {
+	case "", "b", "byte", "bytes":
+		multiplier = 1
+	case "k", "kb", "kib":
+		multiplier = 1024
+	case "m", "mb", "mib":
+		multiplier = 1024 * 1024
+	case "g", "gb", "gib":
+		multiplier = 1024 * 1024 * 1024
+	case "t", "tb", "tib":
+		multiplier = 1024 * 1024 * 1024 * 1024
+	default:
+		return 0, fmt.Errorf("unknown unit: %s", unit)
+	}
+
+	result := int64(num * float64(multiplier))
+	return result, nil
 }
 
 func formatBytes(bytes int64) string {

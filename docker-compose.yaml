@@ -12,6 +12,9 @@ services:
       - ./bashupload.db:/app/bashupload.db
     environment:
       - PORT=3000
+      - MAX_UPLOAD_SIZE=1GB  # Human readable: 100MB, 500MB, 1GB, 5GB, etc.
+      - MAX_DOWNLOADS=1      # Number of times file can be downloaded (1=single download)
+      - FILE_EXPIRE_AFTER=3D # File expiration: 1D, 1W, 1M, 1Y, etc.
       # - API_KEY=your_secret_api_key_here  # Uncomment and set for private instance
     restart: unless-stopped
     healthcheck:

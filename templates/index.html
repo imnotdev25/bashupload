@@ -15,8 +15,8 @@
 
     <div class="description">
         Upload files from command line to easily share between servers,<br>
-        desktops and mobiles, 50G max. Files are stored for 3 days and can be<br>
-        downloaded only once.
+        desktops and mobiles, {{.MaxUploadSize}} max. Files are stored for {{.ExpireTime}} and can be<br>
+        downloaded {{.DownloadLimit}} only.
     </div>
 
     <div class="terminal-box">
@@ -33,7 +33,7 @@
 
     <div class="upload-area" onclick="document.getElementById('fileInput').click()">
         <p>📁 alternatively <strong>choose file(s)</strong> to upload</p>
-        <p class="file-info">Maximum file size: 50GB • Files expire in 3 days • Single download only</p>
+        <p class="file-info">Maximum file size: {{.MaxUploadSize}} • Files expire in {{.ExpireTime}} • {{.DownloadLimit}} only</p>
     </div>
 
     <input type="file" id="fileInput" class="file-input">
@@ -170,7 +170,7 @@
                                     <div style="color: #00ff41; font-size: 1.2em; margin-bottom: 10px;">✅ UPLOAD SUCCESSFUL</div>
                                     <div>File: ${selectedFile.name}</div>
                                     <div>Size: ${formatBytes(response.file_size)}</div>
-                                    <div>Expires: 3 days (single download)</div>
+                                    <div>Expires: {{.ExpireTime}} ({{.DownloadLimit}})</div>
                                 </div>
                                 <div class="terminal-box" style="margin: 15px 0; word-break: break-all;">
                                     <span style="color: #00ff41;">${response.download_url}</span>

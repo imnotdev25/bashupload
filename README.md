@@ -10,9 +10,9 @@ A blazing-fast, secure file uploader built with **Go** and **Fiber** that suppor
 ## ✨ Features
 
 - 🚀 **High Performance** - Built with Fiber for lightning-fast uploads
-- 📁 **Large File Support** - Upload files up to 50GB (configurable)
+- 📁 **Configurable File Size** - Upload limit configurable via environment (default 1GB)
 - 🔗 **Secure Links** - Unique download URLs with original file extensions
-- ⏰ **Auto-Expiry** - Files expire after 3 days and single download (bashupload style)
+- ⏰ **Auto-Expiry** - Files expire after 3 days and configurable download limit
 - 🔐 **API Authentication** - Optional API key protection for private instances
 - 💻 **CLI Tool** - Powerful command-line interface with progress bars
 - 🌐 **Terminal Web Interface** - Retro terminal-style web UI inspired by bashupload
@@ -33,12 +33,12 @@ A blazing-fast, secure file uploader built with **Go** and **Fiber** that suppor
 ### CLI Tool
 ```bash
 $ ./bashupload upload largefile.zip
-📁 Uploading: largefile.zip (2.5 GB)
-Uploading... ████████████████████████████████████████ 100% | 2.5 GB/2.5 GB
+📁 Uploading: largefile.zip (500 MB)
+Uploading... ████████████████████████████████████████ 100% | 500 MB/500 MB
 
 ✅ Upload successful!
 📄 File: largefile.zip
-📏 Size: 2.5 GB
+📏 Size: 500 MB
 🆔 ID: a1b2c3d4e5f6g7h8
 🔗 Download URL: http://localhost:3000/d/a1b2c3d4e5f6g7h8.zip
 ```
@@ -256,8 +256,41 @@ docker run -d \
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
+| `MAX_UPLOAD_SIZE` | `1GB` | Maximum upload size (supports: 100MB, 1GB, 5GB, etc.) |
+| `MAX_DOWNLOADS` | `1` | Number of times file can be downloaded before deletion |
+| `FILE_EXPIRE_AFTER` | `3D` | File expiration time (supports: 1D, 1W, 1M, 1Y, etc.) |
 | `API_KEY` | `""` | API key for authentication (optional) |
 | `GIN_MODE` | `debug` | Gin mode (debug/release) |
+
+### Upload Size Configuration
+
+You can configure the maximum upload size using human-readable strings:
+
+```bash
+# Set to 5GB
+export MAX_UPLOAD_SIZE=5GB
+
+# Set to 100MB
+export MAX_UPLOAD_SIZE=100MB
+
+# Set to 500MB
+export MAX_UPLOAD_SIZE=500MB
+
+# Set to 2.5GB (decimal supported)
+export MAX_UPLOAD_SIZE=2.5GB
+
+# Still supports bytes if you prefer
+export MAX_UPLOAD_SIZE=1073741824
+```
+
+**Supported formats:**
+- **Bytes**: `1024`, `1073741824`
+- **Kilobytes**: `100K`, `100KB`, `100KiB`
+- **Megabytes**: `100M`, `100MB`, `100MiB`
+- **Gigabytes**: `1G`, `1GB`, `1GiB`, `2.5GB`
+- **Terabytes**: `1T`, `1TB`, `1TiB`
+
+**Case insensitive**: `1gb`, `1GB`, `1Gb` all work the same
 
 ### Private Instance Setup
 
@@ -267,7 +300,50 @@ To run a private instance that requires API key authentication:
 # Set API key environment variable
 export API_KEY="your_super_secret_api_key_here"
 
+# Set custom upload limit (human readable)
+export MAX_UPLOAD_SIZE=5GB
+
+# Allow multiple downloads per file
+export MAX_DOWNLOADS=5
+
+# Set custom expiration time
+export FILE_EXPIRE_AFTER=1W
+
 # Run bashupload server
+./bashupload-server
+```
+
+Or with Docker:
+```bash
+# Edit docker-compose.yml and set environment variables
+docker-compose up -d
+```
+
+**Example configurations:**
+
+```bash
+# Quick sharing: 1 hour, single download, small files
+export MAX_UPLOAD_SIZE=50MB
+export MAX_DOWNLOADS=1
+export FILE_EXPIRE_AFTER=1H
+./bashupload-server
+
+# Team sharing: 1 week, multiple downloads, larger files  
+export MAX_UPLOAD_SIZE=2.5GB
+export MAX_DOWNLOADS=10
+export FILE_EXPIRE_AFTER=1W
+./bashupload-server
+
+# Long-term storage: 6 months, unlimited downloads
+export MAX_UPLOAD_SIZE=1GB
+export MAX_DOWNLOADS=999
+export FILE_EXPIRE_AFTER=6MO
+./bashupload-server
+
+# Archive sharing: 1 year, 100 downloads, large files
+export MAX_UPLOAD_SIZE=10GB
+export MAX_DOWNLOADS=100
+export FILE_EXPIRE_AFTER=1Y
 ./bashupload-server
 ```
 
@@ -279,13 +355,13 @@ docker-compose up -d
 
 ### Server Configuration
 
-The server can be configured by modifying the `main.go` file:
+The server can be configured by environment variables:
 
-- **Body Limit**: Currently set to 50GB (configurable)
+- **Upload Limit**: Configurable via `MAX_UPLOAD_SIZE` (default 1GB)
+- **Download Limit**: Configurable via `MAX_DOWNLOADS` (default 1)
+- **File Expiration**: Configurable via `FILE_EXPIRE_AFTER` (default 3 days)
 - **Timeouts**: Read/Write timeout set to 30 minutes
 - **Rate Limiting**: 100 requests per minute per IP
-- **File Expiry**: 3 days (72 hours)
-- **Download Limit**: Single download only (bashupload style)
 
 ## 📁 Project Structure
 

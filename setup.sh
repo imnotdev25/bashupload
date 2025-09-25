@@ -16,7 +16,7 @@ fi
 # Create CSS file if it doesn't exist
 if [ ! -f "static/style.css" ]; then
     echo "🎨 Creating CSS styles..."
-    echo "/* Copy the CSS content from the artifacts to this file */" > static/static.css
+    echo "/* Copy the CSS content from the artifacts to this file */" > static/style.css
     echo "✅ CSS file placeholder created!"
 fi
 
@@ -77,15 +77,21 @@ echo ""
 echo "🐳 Or use Docker:"
 echo "   docker-compose up -d"
 echo ""
-echo "🔧 For private instance, set API_KEY environment variable:"
-echo "   export API_KEY=your_secret_key"
+echo "🔧 Configuration examples:"
+echo "   export API_KEY=your_secret_key          # Enable private mode"
+echo "   export MAX_UPLOAD_SIZE=500MB            # Set upload limit"
+echo "   export MAX_DOWNLOADS=1                  # Single download (default)"
+echo "   export MAX_DOWNLOADS=5                  # Allow 5 downloads"
+echo "   export FILE_EXPIRE_AFTER=3D             # 3 days (default)"
+echo "   export FILE_EXPIRE_AFTER=1W             # 1 week expiration"
+echo "   export FILE_EXPIRE_AFTER=1MO            # 1 month expiration"
 echo ""
 echo "🌐 Access bashupload at: http://localhost:3000"
 echo ""
 echo "📚 Features:"
-echo "   • 50GB file upload limit"
-echo "   • 3-day file expiration"
-echo "   • Single download policy"
+echo "   • Configurable upload limit (default 1GB)"
+echo "   • Configurable download limit (default 1)"
+echo "   • Configurable expiration time (default 3 days)"
 echo "   • Terminal-style web interface"
 echo "   • cURL upload support"
 echo "   • API key authentication (optional)"
@@ -337,7 +343,7 @@ fi
 # Create CSS file if it doesn't exist
 if [ ! -f "static/style.css" ]; then
     echo "🎨 Creating CSS styles..."
-    echo "/* CSS content would be here - see the artifacts for the full CSS */" > static/static.css
+    echo "/* CSS content would be here - see the artifacts for the full CSS */" > static/style.css
     echo "✅ CSS file created! (You'll need to copy the full CSS content from the artifacts)"
 fi
 
