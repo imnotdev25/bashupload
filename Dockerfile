@@ -20,10 +20,10 @@ COPY . .
 RUN mkdir -p templates static
 
 # Build the server
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o server .
+RUN go build -o server .
 
 # Build the CLI
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o uploader ./cmd/cli
+RUN go build -o uploader ./cmd/cli
 
 # Runtime stage
 FROM alpine:latest
