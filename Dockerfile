@@ -13,17 +13,18 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy source code
-COPY . .
-
 # Create required directories
 RUN mkdir -p templates static
 
+# Copy source code
+COPY . .
+
+
 # Build the server
-RUN go build -o server .
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o server .
 
 # Build the CLI
-RUN go build -o uploader ./cmd/cli
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o uploader ./cmd/cli
 
 # Runtime stage
 FROM alpine:latest
