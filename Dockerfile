@@ -8,7 +8,7 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod ./
+COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
@@ -60,14 +60,6 @@ EXPOSE 3000
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
-
-# Set environment variables
-ENV PORT=3000
-ENV GIN_MODE=release
-ENV MAX_UPLOAD_SIZE=1GB
-ENV MAX_DOWNLOADS=1
-ENV FILE_EXPIRE_AFTER=3D
-# ENV API_KEY=your_secret_api_key_here
 
 # Run bashupload server
 CMD ["./server"]
