@@ -2,7 +2,13 @@
 FROM golang:1.21-alpine AS builder
 
 # Install git for go mod download
-RUN apk add --no-cache git
+RUN apk add --no-cache \
+    git \
+    gcc \
+    g++ \
+    musl-dev \
+    sqlite-dev \
+    make
 
 # Set working directory
 WORKDIR /app
@@ -30,7 +36,10 @@ RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o uploader ./cmd/cl
 FROM alpine:latest
 
 # Install ca-certificates and sqlite
-RUN apk --no-cache add ca-certificates sqlite
+RUN apk --no-cache add \
+    ca-certificates \
+    sqlite-libs \
+    tzdata
 
 # Create non-root user
 RUN adduser -D -s /bin/sh bashupload
