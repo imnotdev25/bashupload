@@ -29,18 +29,28 @@ build-cli:
 # Build for different platforms
 build-linux:
 	@echo "Building for Linux..."
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o $(BINARY_SERVER)-linux .
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o $(BINARY_CLI)-linux ./cmd/cli
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_SERVER)-linux .
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_CLI)-linux ./cmd/cli
+
+build-linux-arm64:
+	@echo "Building for Linux ARM64..."
+	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_SERVER)-linux-arm64 .
+	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_CLI)-linux-arm64 ./cmd/cli
 
 build-windows:
 	@echo "Building for Windows..."
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -o $(BINARY_SERVER).exe .
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -o $(BINARY_CLI).exe ./cmd/cli
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_SERVER).exe .
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_CLI).exe ./cmd/cli
 
 build-darwin:
 	@echo "Building for macOS..."
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o $(BINARY_SERVER)-darwin .
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o $(BINARY_CLI)-darwin ./cmd/cli
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_SERVER)-darwin .
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_CLI)-darwin ./cmd/cli
+
+build-darwin-arm64:
+	@echo "Building for macOS ARM64 (Apple Silicon)..."
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_SERVER)-darwin-arm64 .
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -tags "sqlite_omit_load_extension" -o $(BINARY_CLI)-darwin-arm64 ./cmd/cli
 
 # Clean built binaries
 clean:
